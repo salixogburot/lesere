@@ -1,12 +1,16 @@
 import pandas as pd
 import json
 import os
+import math
 
 # Read the Excel file
 file_path = "data/clicks_per_url_by_sector affinity og utgave.xlsx"
 
 # Read the main sheet
 df = pd.read_excel(file_path, sheet_name='totalt')
+
+# Replace NaN values with None for valid JSON
+df = df.where(pd.notnull(df), None)
 
 print(f"✅ Loaded data from '{file_path}'")
 print(f"   Shape: {df.shape}")
@@ -15,13 +19,26 @@ print(f"   Columns: {len(df.columns)}")
 # Convert to JSON
 data_json = df.to_dict('records')
 
+# Clean NaN and Inf values for valid JSON
+def clean_value(value):
+    if isinstance(value, float):
+        if math.isnan(value) or math.isinf(value):
+            return None
+    return value
+
+# Replace NaN/Inf with None in all records
+cleaned_data = []
+for record in data_json:
+    cleaned_record = {k: clean_value(v) for k, v in record.items()}
+    cleaned_data.append(cleaned_record)
+
 # Create docs directory if it doesn't exist
 os.makedirs('docs', exist_ok=True)
 
 # Export to JSON
 output_file = 'docs/sector_data.json'
 with open(output_file, 'w') as f:
-    json.dump(data_json, f, indent=2)
+    json.dump(cleaned_data, f, indent=2)
 
 print(f"\n✅ Exported {len(data_json)} articles to {output_file}")
 
