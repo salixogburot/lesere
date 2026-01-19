@@ -4,7 +4,9 @@ An interactive web dashboard for analyzing website traffic sources from the Cice
 
 ## Live Demo
 
-**View the live dashboard:** [https://salixogburot.github.io/lesere/](https://salixogburot.github.io/lesere/)
+**View the live dashboards:**
+- **Traffic Dashboard**: [https://salixogburot.github.io/lesere/](https://salixogburot.github.io/lesere/)
+- **Sector Analysis**: [https://salixogburot.github.io/lesere/sectors.html](https://salixogburot.github.io/lesere/sectors.html)
 
 The dashboard is available in two versions:
 - **Static Web Version** (GitHub Pages): No installation required, works in any browser
@@ -34,6 +36,39 @@ The dashboard analyzes traffic data from 523 articles with the following breakdo
 - **Facebook**: 3,113 views (8.7%)
 - **LinkedIn**: 946 views (2.6%)
 - **ChatGPT**: 711 views (2.0%)
+
+## Sector Analysis Dashboard
+
+The sector analysis dashboard provides insights into clicks per URL by sector affinity and edition:
+
+- **299 articles** analyzed across multiple editions
+- **6,687 total clicks** tracked by sector
+- **13 sectors** including:
+  - Personal email (42.6% of clicks)
+  - Government (municipal/regional) (9.0%)
+  - CICERO (internal) (7.4%)
+  - Finance/consulting (7.1%)
+  - Government (national/intl) (7.1%)
+  - University/academia (6.1%)
+  - Research institute (6.0%)
+  - Private sector (5.7%)
+  - NGO/interest org (3.7%)
+  - Energy sector (1.9%)
+  - Media (1.8%)
+  - Health sector (0.7%)
+  - Other/unclassified (0.8%)
+
+### Sector Dashboard Features
+
+- **Interactive filtering** by edition and sector focus
+- **6 visualization types**:
+  - Sector distribution pie chart
+  - Top sectors bar chart
+  - Article-sector stacked breakdown
+  - Sector trends by edition
+  - Average affinity ratio comparison
+  - Click heatmap (articles vs sectors)
+- **Real-time updates** based on filter selections
 
 ## Installation
 
@@ -118,23 +153,39 @@ lesere/
 ├── dashboard.py                    # Main Dash application (Python)
 ├── test_dashboard.py              # Data validation script
 ├── analyze_data.py                # Data analysis utility
-├── export_data.py                 # Export data to JSON for web version
+├── analyze_sector_data.py         # Sector data analysis utility
+├── export_data.py                 # Export traffic data to JSON
+├── export_sector_data.py          # Export sector data to JSON
 ├── requirements.txt               # Python dependencies
 ├── README.md                      # This file
 ├── docs/                          # GitHub Pages static site
-│   ├── index.html                 # Static HTML dashboard
-│   └── traffic_data.json          # Exported traffic data
+│   ├── index.html                 # Main traffic dashboard
+│   ├── sectors.html               # Sector analysis dashboard
+│   ├── traffic_data.json          # Exported traffic data
+│   └── sector_data.json           # Exported sector affinity data
 └── data/
-    └── cicero-traffic-all-sources-med nyhetsbrev.xlsx  # Source data
+    ├── cicero-traffic-all-sources-med nyhetsbrev.xlsx
+    └── clicks_per_url_by_sector affinity og utgave.xlsx
 ```
 
-## Data Source
+## Data Sources
 
-The dashboard uses data from `data/cicero-traffic-all-sources-med nyhetsbrev.xlsx`, which contains:
+The dashboards use data from two Excel files:
+
+### Traffic Dashboard
+`data/cicero-traffic-all-sources-med nyhetsbrev.xlsx` contains:
 - Article names
 - Total traffic per article
 - Traffic breakdown by source (Google, Facebook, Newsletter, ChatGPT, LinkedIn)
 - Percentage distribution for each source
+
+### Sector Analysis Dashboard
+`data/clicks_per_url_by_sector affinity og utgave.xlsx` contains:
+- Article names and URLs
+- Edition information
+- Total clicks per article
+- Click breakdown by 13 different sectors
+- Sector affinity ratios
 
 ## GitHub Pages Deployment
 

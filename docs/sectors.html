@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cicero Sector Affinity Analysis</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .nav-links {
+            margin-bottom: 1rem;
+        }
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin-right: 1.5rem;
+            font-weight: 500;
+        }
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+        .stat-card {
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .controls {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .slider-container {
+            margin: 1rem 0;
+        }
+        .slider-label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+        .slider-value {
+            display: inline-block;
+            background: #11998e;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.875rem;
+            margin-left: 0.5rem;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #11998e;
+            cursor: pointer;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #11998e;
+            cursor: pointer;
+        }
+        .loading {
+            text-align: center;
+            padding: 3rem;
+        }
+        .filter-group {
+            margin-bottom: 1rem;
+        }
+        .filter-label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="nav-links">
+                <a href="index.html">← Back to Traffic Dashboard</a>
+            </div>
+            <h1 class="text-center mb-3">Sector Affinity Analysis</h1>
+            <p class="text-center mb-0">Clicks per URL by sector affinity and edition</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="loading" class="loading">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Loading sector data...</p>
+        </div>
+
+        <div id="dashboard" style="display:none;">
+            <!-- Summary Cards -->
+            <div class="row mb-4" id="stats-cards"></div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="slider-container">
+                            <label class="slider-label">
+                                Top Articles:
+                                <span class="slider-value" id="topNValue">20</span>
+                            </label>
+                            <input type="range" id="topNSlider" min="5" max="50" step="5" value="20">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="filter-group">
+                            <label class="filter-label">Edition Filter:</label>
+                            <select class="form-select" id="editionFilter">
+                                <option value="all">All Editions</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="filter-group">
+                            <label class="filter-label">Sector Focus:</label>
+                            <select class="form-select" id="sectorFilter">
+                                <option value="all">All Sectors</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row 1 -->
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="chart-container">
+                        <div id="sectorPieChart"></div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="chart-container">
+                        <div id="sectorBarChart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Row 2 -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="chart-container">
+                        <div id="topArticlesChart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Row 3 -->
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="chart-container">
+                        <div id="editionTrendChart"></div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="chart-container">
+                        <div id="ratioComparisonChart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Row 4 -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="chart-container">
+                        <div id="heatmapChart"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global data
+        let allData = [];
+        const sectorColors = {
+            'CICERO (internal)': '#667eea',
+            'Energy sector': '#f093fb',
+            'Finance/consulting': '#4facfe',
+            'Government (municipal/regional)': '#43e97b',
+            'Government (national/intl)': '#fa709a',
+            'Health sector': '#fee140',
+            'Media': '#30cfd0',
+            'NGO/interest org': '#a8edea',
+            'Other/unclassified': '#fccb90',
+            'Personal email': '#d57eeb',
+            'Private sector': '#feca57',
+            'Research institute': '#ee5a6f',
+            'University/academia': '#c471ed'
+        };
+
+        // Load data
+        fetch('sector_data.json')
+            .then(response => response.json())
+            .then(data => {
+                allData = data;
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                initializeDashboard();
+            })
+            .catch(error => {
+                console.error('Error loading data:', error);
+                document.getElementById('loading').innerHTML = '<p class="text-danger">Error loading data. Please try again.</p>';
+            });
+
+        function initializeDashboard() {
+            createStatsCards();
+            populateFilters();
+            updateCharts();
+
+            // Event listeners
+            document.getElementById('topNSlider').addEventListener('input', function(e) {
+                document.getElementById('topNValue').textContent = e.target.value;
+                updateCharts();
+            });
+
+            document.getElementById('editionFilter').addEventListener('change', updateCharts);
+            document.getElementById('sectorFilter').addEventListener('change', updateCharts);
+        }
+
+        function getSectorColumns() {
+            const sampleRow = allData[0];
+            return Object.keys(sampleRow).filter(key =>
+                !key.endsWith('_ratio') &&
+                !['article_name', 'target_url', 'edition', 'total_clicks', 'overall_%'].includes(key) &&
+                typeof sampleRow[key] === 'number'
+            );
+        }
+
+        function createStatsCards() {
+            const totalArticles = allData.length;
+            const totalClicks = allData.reduce((sum, row) => sum + row.total_clicks, 0);
+            const avgClicks = (totalClicks / totalArticles).toFixed(1);
+
+            const sectors = getSectorColumns();
+            const topSector = sectors.reduce((top, sector) => {
+                const sectorTotal = allData.reduce((sum, row) => sum + (row[sector] || 0), 0);
+                return sectorTotal > top.total ? { name: sector, total: sectorTotal } : top;
+            }, { name: '', total: 0 });
+
+            const stats = [
+                { title: 'Total Articles', value: totalArticles.toLocaleString(), color: '#11998e' },
+                { title: 'Total Clicks', value: totalClicks.toLocaleString(), color: '#38ef7d' },
+                { title: 'Avg Clicks/Article', value: avgClicks, color: '#667eea' },
+                { title: 'Sectors Tracked', value: sectors.length, color: '#f093fb' },
+                { title: 'Top Sector', value: topSector.name.substring(0, 20), color: '#43e97b' },
+                { title: 'Top Sector Clicks', value: topSector.total.toLocaleString(), color: '#fa709a' }
+            ];
+
+            const container = document.getElementById('stats-cards');
+            container.innerHTML = stats.map(stat => `
+                <div class="col-md-2">
+                    <div class="card stat-card">
+                        <div class="card-body text-center p-3">
+                            <h5 style="color: ${stat.color}; margin: 0; font-size: 1.5rem;">${stat.value}</h5>
+                            <p class="mb-0 text-muted" style="font-size: 0.875rem;">${stat.title}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function populateFilters() {
+            // Populate edition filter
+            const editions = [...new Set(allData.map(row => row.edition))].filter(e => e).sort();
+            const editionSelect = document.getElementById('editionFilter');
+            editions.forEach(edition => {
+                const option = document.createElement('option');
+                option.value = edition;
+                option.textContent = edition;
+                editionSelect.appendChild(option);
+            });
+
+            // Populate sector filter
+            const sectors = getSectorColumns();
+            const sectorSelect = document.getElementById('sectorFilter');
+            sectors.forEach(sector => {
+                const option = document.createElement('option');
+                option.value = sector;
+                option.textContent = sector;
+                sectorSelect.appendChild(option);
+            });
+        }
+
+        function getFilteredData() {
+            const topN = parseInt(document.getElementById('topNSlider').value);
+            const edition = document.getElementById('editionFilter').value;
+            const sector = document.getElementById('sectorFilter').value;
+
+            let filtered = allData;
+
+            // Filter by edition
+            if (edition !== 'all') {
+                filtered = filtered.filter(row => row.edition === edition);
+            }
+
+            // Sort by selected sector or total clicks
+            if (sector !== 'all') {
+                filtered = filtered.sort((a, b) => (b[sector] || 0) - (a[sector] || 0));
+            } else {
+                filtered = filtered.sort((a, b) => b.total_clicks - a.total_clicks);
+            }
+
+            return filtered.slice(0, topN);
+        }
+
+        function updateCharts() {
+            const filteredData = getFilteredData();
+            const sectors = getSectorColumns();
+
+            // 1. Sector Distribution Pie Chart
+            const sectorTotals = {};
+            sectors.forEach(sector => {
+                sectorTotals[sector] = allData.reduce((sum, row) => sum + (row[sector] || 0), 0);
+            });
+
+            const pieData = [{
+                values: Object.values(sectorTotals),
+                labels: Object.keys(sectorTotals),
+                type: 'pie',
+                hole: 0.4,
+                marker: {
+                    colors: Object.keys(sectorTotals).map(s => sectorColors[s] || '#999')
+                },
+                textinfo: 'label+percent',
+                textposition: 'outside'
+            }];
+
+            const pieLayout = {
+                title: 'Overall Click Distribution by Sector',
+                height: 400,
+                showlegend: false
+            };
+
+            Plotly.newPlot('sectorPieChart', pieData, pieLayout, {responsive: true});
+
+            // 2. Sector Bar Chart
+            const sortedSectors = Object.entries(sectorTotals)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            const barData = [{
+                x: sortedSectors.map(s => s[0]),
+                y: sortedSectors.map(s => s[1]),
+                type: 'bar',
+                marker: {
+                    color: sortedSectors.map(s => sectorColors[s[0]] || '#999')
+                },
+                text: sortedSectors.map(s => s[1].toLocaleString()),
+                textposition: 'outside'
+            }];
+
+            const barLayout = {
+                title: 'Top 10 Sectors by Total Clicks',
+                height: 400,
+                xaxis: { tickangle: -45 },
+                yaxis: { title: 'Total Clicks' }
+            };
+
+            Plotly.newPlot('sectorBarChart', barData, barLayout, {responsive: true});
+
+            // 3. Top Articles Stacked Bar
+            const topArticlesData = sectors.slice(0, 10).map(sector => ({
+                x: filteredData.map(row => row.article_name.substring(0, 30) + '...'),
+                y: filteredData.map(row => row[sector] || 0),
+                name: sector,
+                type: 'bar',
+                marker: { color: sectorColors[sector] || '#999' }
+            }));
+
+            const topArticlesLayout = {
+                title: `Top ${filteredData.length} Articles - Sector Breakdown`,
+                height: 500,
+                barmode: 'stack',
+                xaxis: {
+                    title: 'Article',
+                    tickangle: -45
+                },
+                yaxis: { title: 'Clicks' },
+                hovermode: 'x unified'
+            };
+
+            Plotly.newPlot('topArticlesChart', topArticlesData, topArticlesLayout, {responsive: true});
+
+            // 4. Edition Trend Chart
+            const editions = [...new Set(allData.map(row => row.edition))].filter(e => e).sort();
+            const editionData = sectors.slice(0, 6).map(sector => {
+                const yValues = editions.map(edition => {
+                    const editionRows = allData.filter(row => row.edition === edition);
+                    return editionRows.reduce((sum, row) => sum + (row[sector] || 0), 0);
+                });
+
+                return {
+                    x: editions,
+                    y: yValues,
+                    name: sector,
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    line: { color: sectorColors[sector] || '#999' }
+                };
+            });
+
+            const editionLayout = {
+                title: 'Sector Trends by Edition (Top 6 Sectors)',
+                height: 400,
+                xaxis: { title: 'Edition' },
+                yaxis: { title: 'Clicks' }
+            };
+
+            Plotly.newPlot('editionTrendChart', editionData, editionLayout, {responsive: true});
+
+            // 5. Ratio Comparison Chart
+            const ratioData = sectors.slice(0, 10).map(sector => {
+                const ratioCol = sector + '_ratio';
+                const avgRatio = allData
+                    .filter(row => row[ratioCol] != null && !isNaN(row[ratioCol]))
+                    .reduce((sum, row, idx, arr) => {
+                        return idx === arr.length - 1 ? (sum + row[ratioCol]) / arr.length : sum + row[ratioCol];
+                    }, 0);
+
+                return avgRatio;
+            });
+
+            const ratioBarData = [{
+                x: sectors.slice(0, 10),
+                y: ratioData,
+                type: 'bar',
+                marker: {
+                    color: sectors.slice(0, 10).map(s => sectorColors[s] || '#999')
+                },
+                text: ratioData.map(r => r.toFixed(2)),
+                textposition: 'outside'
+            }];
+
+            const ratioLayout = {
+                title: 'Average Sector Affinity Ratio (Top 10)',
+                height: 400,
+                xaxis: { tickangle: -45 },
+                yaxis: { title: 'Average Ratio' }
+            };
+
+            Plotly.newPlot('ratioComparisonChart', ratioBarData, ratioLayout, {responsive: true});
+
+            // 6. Heatmap - Top Articles vs Top Sectors
+            const topSectors = sectors.slice(0, 8);
+            const topArticles = filteredData.slice(0, 15);
+
+            const heatmapZ = topArticles.map(article =>
+                topSectors.map(sector => article[sector] || 0)
+            );
+
+            const heatmapData = [{
+                z: heatmapZ,
+                x: topSectors,
+                y: topArticles.map(row => row.article_name.substring(0, 40) + '...'),
+                type: 'heatmap',
+                colorscale: 'Viridis',
+                showscale: true
+            }];
+
+            const heatmapLayout = {
+                title: `Click Heatmap - Top ${topArticles.length} Articles vs Top ${topSectors.length} Sectors`,
+                height: 600,
+                xaxis: { title: 'Sector', tickangle: -45 },
+                yaxis: { title: 'Article' }
+            };
+
+            Plotly.newPlot('heatmapChart', heatmapData, heatmapLayout, {responsive: true});
+        }
+    </script>
+</body>
+</html>
