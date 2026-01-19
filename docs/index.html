@@ -85,11 +85,32 @@
             text-align: center;
             padding: 3rem;
         }
+        .nav-links {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            margin: 0 0.5rem;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+        .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="container">
+            <div class="nav-links">
+                <a href="index.html">Traffic Dashboard</a>
+                <a href="sectors.html">Sector Analysis →</a>
+            </div>
             <h1 class="text-center mb-3">Cicero Traffic Dashboard</h1>
             <p class="text-center mb-0">Analysis of traffic sources including Newsletter</p>
         </div>
