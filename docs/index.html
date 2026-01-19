@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cicero Traffic Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .controls {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .slider-container {
+            margin: 1rem 0;
+        }
+        .slider-label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+        .slider-value {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.875rem;
+            margin-left: 0.5rem;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+        .loading {
+            text-align: center;
+            padding: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1 class="text-center mb-3">Cicero Traffic Dashboard</h1>
+            <p class="text-center mb-0">Analysis of traffic sources including Newsletter</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="loading" class="loading">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Loading traffic data...</p>
+        </div>
+
+        <div id="dashboard" style="display:none;">
+            <!-- Summary Cards -->
+            <div class="row mb-4" id="stats-cards"></div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="slider-container">
+                            <label class="slider-label">
+                                Number of Top Articles:
+                                <span class="slider-value" id="topNValue">20</span>
+                            </label>
+                            <input type="range" id="topNSlider" min="5" max="50" step="5" value="20">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="slider-container">
+                            <label class="slider-label">
+                                Minimum Total Traffic:
+                                <span class="slider-value" id="minTrafficValue">0</span>
+                            </label>
+                            <input type="range" id="minTrafficSlider" min="0" max="2000" step="100" value="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row 1 -->
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="chart-container">
+                        <div id="pieChart"></div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="chart-container">
+                        <div id="barChart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Row 2 -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="chart-container">
+                        <div id="topArticlesChart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Row 3 -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="chart-container">
+                        <div id="percentageChart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Row 4 -->
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="chart-container">
+                        <div id="boxPlot"></div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="chart-container">
+                        <div id="scatterPlot"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global data
+        let allData = [];
+        const sourceColors = {
+            'Google': '#4285F4',
+            'Facebook': '#1877F2',
+            'Newsletter': '#FF6B6B',
+            'ChatGPT': '#10A37F',
+            'LinkedIn': '#0A66C2'
+        };
+
+        // Load data
+        fetch('traffic_data.json')
+            .then(response => response.json())
+            .then(data => {
+                allData = data;
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                initializeDashboard();
+            })
+            .catch(error => {
+                console.error('Error loading data:', error);
+                document.getElementById('loading').innerHTML = '<p class="text-danger">Error loading data. Please try again.</p>';
+            });
+
+        function initializeDashboard() {
+            createStatsCards();
+            updateCharts();
+
+            // Event listeners
+            document.getElementById('topNSlider').addEventListener('input', function(e) {
+                document.getElementById('topNValue').textContent = e.target.value;
+                updateCharts();
+            });
+
+            document.getElementById('minTrafficSlider').addEventListener('input', function(e) {
+                document.getElementById('minTrafficValue').textContent = e.target.value;
+                updateCharts();
+            });
+        }
+
+        function createStatsCards() {
+            const totalArticles = allData.length;
+            const totalTraffic = allData.reduce((sum, row) => sum + row.Total, 0);
+            const googleTraffic = allData.reduce((sum, row) => sum + row.Google, 0);
+            const facebookTraffic = allData.reduce((sum, row) => sum + row.Facebook, 0);
+            const newsletterTraffic = allData.reduce((sum, row) => sum + row.Newsletter, 0);
+            const chatgptTraffic = allData.reduce((sum, row) => sum + row.ChatGPT, 0);
+            const linkedinTraffic = allData.reduce((sum, row) => sum + row.LinkedIn, 0);
+
+            const stats = [
+                { title: 'Total Articles', value: totalArticles.toLocaleString(), color: '#667eea' },
+                { title: 'Total Traffic', value: totalTraffic.toLocaleString(), color: '#28a745' },
+                { title: 'Google', value: googleTraffic.toLocaleString(), color: sourceColors.Google },
+                { title: 'Facebook', value: facebookTraffic.toLocaleString(), color: sourceColors.Facebook },
+                { title: 'Newsletter', value: newsletterTraffic.toLocaleString(), color: sourceColors.Newsletter },
+                { title: 'ChatGPT', value: chatgptTraffic.toLocaleString(), color: sourceColors.ChatGPT }
+            ];
+
+            const container = document.getElementById('stats-cards');
+            container.innerHTML = stats.map(stat => `
+                <div class="col-md-2">
+                    <div class="card stat-card">
+                        <div class="card-body text-center">
+                            <h4 style="color: ${stat.color}; margin: 0;">${stat.value}</h4>
+                            <p class="mb-0 text-muted">${stat.title}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getFilteredData() {
+            const topN = parseInt(document.getElementById('topNSlider').value);
+            const minTraffic = parseInt(document.getElementById('minTrafficSlider').value);
+
+            return allData
+                .filter(row => row.Total >= minTraffic)
+                .slice(0, topN);
+        }
+
+        function updateCharts() {
+            const filteredData = getFilteredData();
+
+            // 1. Pie Chart - Overall Distribution
+            const sourceTotals = {
+                'Google': allData.reduce((sum, row) => sum + row.Google, 0),
+                'Facebook': allData.reduce((sum, row) => sum + row.Facebook, 0),
+                'Newsletter': allData.reduce((sum, row) => sum + row.Newsletter, 0),
+                'ChatGPT': allData.reduce((sum, row) => sum + row.ChatGPT, 0),
+                'LinkedIn': allData.reduce((sum, row) => sum + row.LinkedIn, 0)
+            };
+
+            const pieData = [{
+                values: Object.values(sourceTotals),
+                labels: Object.keys(sourceTotals),
+                type: 'pie',
+                hole: 0.4,
+                marker: {
+                    colors: Object.keys(sourceTotals).map(k => sourceColors[k])
+                },
+                textinfo: 'label+percent',
+                textposition: 'outside'
+            }];
+
+            const pieLayout = {
+                title: 'Overall Traffic Distribution by Source',
+                height: 400,
+                showlegend: true,
+                legend: { orientation: 'v', x: 1, y: 0.5 }
+            };
+
+            Plotly.newPlot('pieChart', pieData, pieLayout, {responsive: true});
+
+            // 2. Bar Chart - Total by Source
+            const barData = [{
+                x: Object.keys(sourceTotals),
+                y: Object.values(sourceTotals),
+                type: 'bar',
+                marker: {
+                    color: Object.keys(sourceTotals).map(k => sourceColors[k])
+                },
+                text: Object.values(sourceTotals).map(v => v.toLocaleString()),
+                textposition: 'outside'
+            }];
+
+            const barLayout = {
+                title: 'Total Traffic by Source',
+                height: 400,
+                yaxis: { title: 'Traffic' },
+                xaxis: { title: 'Source' }
+            };
+
+            Plotly.newPlot('barChart', barData, barLayout, {responsive: true});
+
+            // 3. Top Articles - Stacked Bar
+            const sources = ['Google', 'Facebook', 'Newsletter', 'ChatGPT', 'LinkedIn'];
+            const topArticlesData = sources.map(source => ({
+                x: filteredData.map(row => row.Article),
+                y: filteredData.map(row => row[source]),
+                name: source,
+                type: 'bar',
+                marker: { color: sourceColors[source] }
+            }));
+
+            const topArticlesLayout = {
+                title: `Top ${filteredData.length} Articles - Traffic by Source`,
+                height: 500,
+                barmode: 'stack',
+                xaxis: {
+                    title: 'Article',
+                    tickangle: -45
+                },
+                yaxis: { title: 'Traffic' },
+                hovermode: 'x unified'
+            };
+
+            Plotly.newPlot('topArticlesChart', topArticlesData, topArticlesLayout, {responsive: true});
+
+            // 4. Percentage Stacked Bar
+            const percentageData = sources.map(source => ({
+                x: filteredData.map(row => row.Article),
+                y: filteredData.map(row => row[`Pct_${source}`]),
+                name: source,
+                type: 'bar',
+                marker: { color: sourceColors[source] }
+            }));
+
+            const percentageLayout = {
+                title: `Traffic Source Distribution (%) - Top ${filteredData.length} Articles`,
+                height: 500,
+                barmode: 'stack',
+                xaxis: {
+                    title: 'Article',
+                    tickangle: -45
+                },
+                yaxis: {
+                    title: 'Percentage (%)',
+                    range: [0, 100]
+                },
+                hovermode: 'x unified'
+            };
+
+            Plotly.newPlot('percentageChart', percentageData, percentageLayout, {responsive: true});
+
+            // 5. Box Plot
+            const boxData = sources.map(source => ({
+                y: allData.map(row => row[source]),
+                name: source,
+                type: 'box',
+                marker: { color: sourceColors[source] }
+            }));
+
+            const boxLayout = {
+                title: 'Traffic Distribution by Source (All Articles)',
+                height: 400,
+                yaxis: { title: 'Traffic' }
+            };
+
+            Plotly.newPlot('boxPlot', boxData, boxLayout, {responsive: true});
+
+            // 6. Scatter Plot
+            const scatterData = [{
+                x: filteredData.map(row => row.Total),
+                y: filteredData.map(row => row.Google),
+                mode: 'markers',
+                type: 'scatter',
+                text: filteredData.map(row => row.Article),
+                marker: {
+                    size: filteredData.map(row => Math.max(row.Facebook / 5, 5)),
+                    color: filteredData.map(row => row.Newsletter),
+                    colorscale: 'Reds',
+                    showscale: true,
+                    colorbar: { title: 'Newsletter<br>Traffic' }
+                }
+            }];
+
+            const scatterLayout = {
+                title: `Google Traffic vs Total Traffic (Top ${filteredData.length} Articles)`,
+                height: 400,
+                xaxis: { title: 'Total Traffic' },
+                yaxis: { title: 'Google Traffic' },
+                hovermode: 'closest'
+            };
+
+            Plotly.newPlot('scatterPlot', scatterData, scatterLayout, {responsive: true});
+        }
+    </script>
+</body>
+</html>

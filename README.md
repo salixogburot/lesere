@@ -2,6 +2,14 @@
 
 An interactive web dashboard for analyzing website traffic sources from the Cicero dataset, including traffic from Google, Facebook, Newsletter, ChatGPT, and LinkedIn.
 
+## Live Demo
+
+**View the live dashboard:** [https://salixogburot.github.io/lesere/](https://salixogburot.github.io/lesere/)
+
+The dashboard is available in two versions:
+- **Static Web Version** (GitHub Pages): No installation required, works in any browser
+- **Python Version** (Local): Full-featured Dash application for local development
+
 ## Features
 
 - **Interactive Visualizations**: Multiple charts and graphs showing traffic patterns
@@ -107,11 +115,15 @@ A scatter plot analyzing the correlation between Google traffic and total traffi
 
 ```
 lesere/
-├── dashboard.py                    # Main dashboard application
+├── dashboard.py                    # Main Dash application (Python)
 ├── test_dashboard.py              # Data validation script
 ├── analyze_data.py                # Data analysis utility
+├── export_data.py                 # Export data to JSON for web version
 ├── requirements.txt               # Python dependencies
 ├── README.md                      # This file
+├── docs/                          # GitHub Pages static site
+│   ├── index.html                 # Static HTML dashboard
+│   └── traffic_data.json          # Exported traffic data
 └── data/
     └── cicero-traffic-all-sources-med nyhetsbrev.xlsx  # Source data
 ```
@@ -123,6 +135,38 @@ The dashboard uses data from `data/cicero-traffic-all-sources-med nyhetsbrev.xls
 - Total traffic per article
 - Traffic breakdown by source (Google, Facebook, Newsletter, ChatGPT, LinkedIn)
 - Percentage distribution for each source
+
+## GitHub Pages Deployment
+
+The static web version is automatically deployed to GitHub Pages from the `docs/` folder.
+
+### Updating the Live Dashboard
+
+To update the data on the live site:
+
+1. Update the Excel file in `data/`
+2. Run the export script:
+```bash
+python3 export_data.py
+```
+3. Commit and push the changes:
+```bash
+git add docs/traffic_data.json
+git commit -m "Update traffic data"
+git push
+```
+
+### Configuring GitHub Pages
+
+If you need to set up GitHub Pages for the first time:
+
+1. Go to your repository on GitHub
+2. Click **Settings** > **Pages**
+3. Under **Source**, select **Deploy from a branch**
+4. Select **main** branch and **/docs** folder
+5. Click **Save**
+
+The dashboard will be available at: `https://[username].github.io/[repository-name]/`
 
 ## Customization
 
